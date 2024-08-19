@@ -1,0 +1,22 @@
+modes
+player vs player 
+player vs AI
+AI vs AI
+
+gameboard
+player(name)
+robot(name=robot, accuracy)
+
+getPlayerMove()
+getAIMove()
+// gets the best possible move and plays that (accuracy)% of the time, otherwise plays random move 
+checkGameEnd() needs access to gameboard
+// checks if game has ended the turn it was called after, returns
+// three different values: draw, xwin, ywin
+minmax()
+// is called by getAIMove() and recursively finds the best move 
+
+
+player will select mode
+X will automatically go first
+maybe ask player for custom name
