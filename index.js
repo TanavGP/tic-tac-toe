@@ -145,6 +145,7 @@ const roundController = (function() {
     let move = 'X';
     let playerMove = null;
     let numberOfMoves = 0;
+    let gameType = null;
 
     function initBoard() {
         for (let i = 0; i < 3; i++) {
@@ -156,7 +157,8 @@ const roundController = (function() {
         const squareElements = document.querySelectorAll('.square');
         squareElements.forEach(squareElement => {
             squareElement.addEventListener('click', (e) => {
-                if (squareElement.classList.contains('marked') || gameEnd || move !== playerMove)
+                if (squareElement.classList.contains('marked') || gameEnd || 
+                (move !== playerMove && gameType !== 'pvp'))
                     return;
 
                 handlePlayerMove(e.target, squareElement);
@@ -169,9 +171,8 @@ const roundController = (function() {
         let val = target.value - 1;
         gameBoard[Math.floor(val / 3)][val % 3] = move;
         target.textContent = move;
-        move = playerMove === 'X' ? 'O' : 'X';
+        move = move === 'X' ? 'O' : 'X';
         squareElement.classList.add('marked');
-        numberOfMoves++;
     }
 
     function handleAIMove() {
@@ -186,7 +187,6 @@ const roundController = (function() {
         squareElement.textContent = move;
         squareElement.classList.add('marked');
         move = playerMove;
-        numberOfMoves++;
     }
 
     function checkGameState() {
@@ -203,20 +203,28 @@ const roundController = (function() {
 
     async function playRound() {
         checkGameState();
-        if (!gameEnd) {
+        if (!gameEnd && gameType !== 'pvp') {
             await new Promise(resolve => setTimeout(resolve, 500)); // Simulate AI thinking time
             handleAIMove();
             checkGameState();
         }
     }
 
-    async function startGame(playersMove) {
+    async function startGame(_gameType, playersMove) {
         initBoard();
-        addSquareEventListener();
-        playerMove = playersMove;
-        if (move !== playerMove) {
-            await new Promise(resolve => setTimeout(resolve, 500)); // Simulate AI thinking time
-            handleAIMove();
+        gameType = _gameType;
+        if (gameType === "pva") {
+            addSquareEventListener();
+            playerMove = playersMove;
+            if (move !== playerMove) {
+                await new Promise(resolve => setTimeout(resolve, 500)); // Simulate AI thinking time
+                handleAIMove();
+            } 
+        } else if (gameType === "pvp") {
+            addSquareEventListener();
+            playersMove = playersMove;
+        } else {
+            playRound();
         }
     }
 
@@ -234,14 +242,47 @@ const UI = (function() {
         containerElement.replaceChildren();
     }
 
+    function initGamemode() {
+        unload();
+        const headerElement = document.querySelector('.header');
+        const containerElement = document.querySelector('.container');
+
+        headerElement.textContent = 'Choose Your Gamemode!';
+        const pvpDiv = document.createElement('button');
+        pvpDiv.textContent = 'Player vs Player';
+        pvpDiv.classList.add('pvp');
+
+        const pvaDiv = document.createElement('button');
+        pvaDiv.textContent = 'Player vs AI';
+        pvaDiv.classList.add('pva');
+
+        const avaDiv = document.createElement('button');
+        avaDiv.textContent = 'AI vs AI';
+        avaDiv.classList.add('ava');
+
+        [pvpDiv, pvaDiv, avaDiv].forEach(typeElement => {
+            typeElement.addEventListener('click', (e) => {
+                const type = e.target.classList[e.target.classList.length - 1];
+                if (type === 'pvp') {
+                    initRound(type, 'X');
+                } else if (type === 'pva') {
+                    initStart();
+                } else {
+                    initRound(type, 'X');
+                }
+            })
+            containerElement.appendChild(typeElement);
+        })
+
+        containerElement.classList.add('gamemode');
+    }
+
     function initStart() {
         unload();
         const headerElement = document.querySelector('.header');
         const containerElement = document.querySelector('.container');
 
         headerElement.textContent = 'Choose Your Move!';
-
-        containerElement.classList.add('move');
 
         const xButton = document.createElement('button');
         xButton.textContent = 'X';
@@ -250,13 +291,15 @@ const UI = (function() {
         [xButton, yButton].forEach(btn => {
             btn.addEventListener('click', (e) => {
                 move = e.target.textContent;
-                initRound(move);
+                initRound('pva', move);
             })
             containerElement.appendChild(btn);
         })
+        containerElement.classList.remove('gamemode');
+        containerElement.classList.add('move');
     }
 
-    function initRound(playerMove) {
+    function initRound(gameType, playerMove) {
         unload();
         const headerElement = document.querySelector('.header');
         const containerElement = document.querySelector('.container');
@@ -269,14 +312,16 @@ const UI = (function() {
             containerElement.appendChild(buttonElement);
         }
 
-        containerElement.classList.replace('move', 'play');
+        containerElement.classList.remove('gamemode', 'move');
+        containerElement.classList.add('play');
 
-        roundController.startGame(playerMove);
+        roundController.startGame(gameType, playerMove);
     }
 
-    return {initStart};
+    return {initGamemode};
 })();
 
 const gameController = (function() {
-    UI.initStart();
+    //UI.initStart();
+    UI.initGamemode();
 })();

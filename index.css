@@ -32,6 +32,10 @@ body {
     grid-template-columns: repeat(3, 200px);
 }
 
+.gamemode {
+    grid-template-columns: 400px;
+}
+
 button:hover {
     filter: brightness(0.8);
 }
