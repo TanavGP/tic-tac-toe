@@ -1,6 +1,74 @@
 const AIController = (function() {
-    function getAIMove(gameBoard) {
-        // to be implemented
+    function getAIMove(gameBoard, accuracy, MyMove) {
+        let rand = Math.floor(Math.random() * 100);
+        if (rand <= accuracy) {
+            return getBestMove(gameBoard, MyMove);
+        } else {
+            return getRandomMove(gameBoard);
+        }
+    }
+
+    function minimax(gameBoard, depth, isMaximizing, MyMove) {
+        let otherMove = MyMove === 'X' ? 'O' : 'X';
+        const scores = {
+            [MyMove]: 10,                        // I win 
+            [otherMove]: -10,                    // Other Player wins
+            draw: 0                              // Draw
+        };
+    
+        let winner = winChecker.compute(gameBoard);
+        if (winner !== null) {
+            return scores[winner];
+        }
+    
+        if (isMaximizing) {
+            let maxEval = -Infinity;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (gameBoard[i][j] === null) {  // Empty spot
+                        gameBoard[i][j] = MyMove;
+                        let eval = minimax(gameBoard, depth + 1, false, MyMove);
+                        gameBoard[i][j] = null;      // Undo the move
+                        maxEval = Math.max(maxEval, eval);
+                    }
+                }
+            }
+            return maxEval;
+        } else {
+            let minEval = Infinity;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (gameBoard[i][j] === null) {  // Empty spot
+                        gameBoard[i][j] = otherMove;
+                        let eval = minimax(gameBoard, depth + 1, true, MyMove);
+                        gameBoard[i][j] = null;  // Undo the move
+                        minEval = Math.min(minEval, eval);
+                    }
+                }
+            }
+            return minEval;
+        }
+    }
+    
+    function getBestMove(gameBoard, MyMove) {
+        let bestScore = -Infinity;
+        let bestMove = null;
+    
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+                if (gameBoard[i][j] === null) {  // Empty spot
+                    gameBoard[i][j] = MyMove;
+                    let moveScore = minimax(gameBoard, 0, false, MyMove);
+                    gameBoard[i][j] = null;  // Undo the move
+    
+                    if (moveScore > bestScore) {
+                        bestScore = moveScore;
+                        bestMove = { i, j };
+                    }
+                }
+            }
+        }
+        return bestMove;
     }
 
     function getRandomMove(gameBoard) {
@@ -8,13 +76,13 @@ const AIController = (function() {
         for (let i = 0; i < 3; i++) {
             for (let j = 0; j < 3; j++) {
                 if (gameBoard[i][j] === null)
-                    possibleMoves.push(3 * i + j);
+                    possibleMoves.push({i, j});
             }
         }
         return possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
     }
 
-    return {getAIMove, getRandomMove};
+    return {getAIMove};
 })();
 
 const winChecker = (function() {
@@ -51,7 +119,21 @@ const winChecker = (function() {
     }
 
     function compute(gameBoard) {
-        return checkRows(gameBoard) || checkCol(gameBoard) || checkDiagonals(gameBoard);
+        let numberOfMoves = 0;
+        gameBoard.forEach(gv => {
+            gv.forEach(g => {
+                if (g !== null)
+                    numberOfMoves++;
+            })
+        })
+
+        let ans = checkRows(gameBoard) || checkCol(gameBoard) || checkDiagonals(gameBoard);
+        if (ans) {
+            return ans;
+        } else if (numberOfMoves === 9) {
+            return "draw";
+        } 
+        return null;
     }
 
     return {compute};
@@ -61,6 +143,7 @@ const roundController = (function() {
     const gameBoard = [];
     let gameEnd = false;
     let move = 'X';
+    let playerMove = null;
     let numberOfMoves = 0;
 
     function initBoard() {
@@ -73,7 +156,7 @@ const roundController = (function() {
         const squareElements = document.querySelectorAll('.square');
         squareElements.forEach(squareElement => {
             squareElement.addEventListener('click', (e) => {
-                if (squareElement.classList.contains('marked') || gameEnd || move === 'O')
+                if (squareElement.classList.contains('marked') || gameEnd || move !== playerMove)
                     return;
 
                 handlePlayerMove(e.target, squareElement);
@@ -86,32 +169,34 @@ const roundController = (function() {
         let val = target.value - 1;
         gameBoard[Math.floor(val / 3)][val % 3] = move;
         target.textContent = move;
-        move = 'O'; // Switch to AI move
+        move = playerMove === 'X' ? 'O' : 'X';
         squareElement.classList.add('marked');
         numberOfMoves++;
     }
 
     function handleAIMove() {
-        const aiMove = AIController.getRandomMove(gameBoard);
-        const aiRow = Math.floor(aiMove / 3);
-        const aiCol = aiMove % 3;
-        gameBoard[aiRow][aiCol] = move;
+        // ACCURACY IS 100 RIGHT NOW!
+        const aiMove = AIController.getAIMove(gameBoard, 100, playerMove === 'X' ? 'O' : 'X');
+        const { i, j } = aiMove;
 
-        const squareElement = document.querySelectorAll('.square')[aiMove];
+        gameBoard[i][j] = move;
+
+        const squareIndex = i * 3 + j;
+        const squareElement = document.querySelectorAll('.square')[squareIndex];
         squareElement.textContent = move;
         squareElement.classList.add('marked');
-        move = 'X'; // Switch back to player
+        move = playerMove;
         numberOfMoves++;
     }
 
     function checkGameState() {
         let winner = winChecker.compute(gameBoard);
         const headerElement = document.querySelector('.header');
-        if (winner) {
-            headerElement.textContent = 'Winner is: ' + winner;
-            gameEnd = true;
-        } else if (numberOfMoves === 9) {
+        if (winner === 'draw') {
             headerElement.textContent = 'Draw!';
+            gameEnd = true;
+        } else if (winner) {
+            headerElement.textContent = 'Winner is: ' + winner;
             gameEnd = true;
         }
     }
@@ -125,11 +210,11 @@ const roundController = (function() {
         }
     }
 
-    async function startGame(playerMove) {
+    async function startGame(playersMove) {
         initBoard();
         addSquareEventListener();
-        move = playerMove;
-        if (move === 'O') {
+        playerMove = playersMove;
+        if (move !== playerMove) {
             await new Promise(resolve => setTimeout(resolve, 500)); // Simulate AI thinking time
             handleAIMove();
         }
