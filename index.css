@@ -9,16 +9,29 @@ body {
     height: 100vh;
     width: 100vw;
     align-content: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.header {
+    font-size: 3rem;
 }
 
 .container {
     justify-content: center;
     display: grid;
-    grid-template-columns: repeat(3, 200px);
     grid-template-rows: repeat(3, 200px);
     gap: 5px;
 }
 
-.square:hover {
+.move {
+    grid-template-columns: 400px 400px;
+}
+
+.play {
+    grid-template-columns: repeat(3, 200px);
+}
+
+button:hover {
     filter: brightness(0.8);
 }
