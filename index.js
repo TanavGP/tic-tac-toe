@@ -139,54 +139,82 @@ const winChecker = (function() {
     return {compute};
 })();
 
-const roundController = (function() {
-    const gameBoard = [];
-    let gameEnd = false;
-    let move = 'X';
-    let playerMove = null;
-    let numberOfMoves = 0;
-    let gameType = null;
+function createPlayer(type, name, accuracy, move) {
+    function handleAIMove(gameBoard) {
+        const aiMove = AIController.getAIMove(gameBoard, accuracy, move);
+        const { i, j } = aiMove;
+        gameBoard[i][j] = move;
+        const squareElement = document.querySelectorAll('.square')[i * 3 + j];
+        squareElement.classList.add('marked');
+        squareElement.textContent = move;
+    }
 
-    function initBoard() {
-        for (let i = 0; i < 3; i++) {
-            gameBoard.push([null, null, null]);
-        }
+    function handlePlayerMove(gameBoard, target, squareElement) {
+        let val = target.value - 1;
+        gameBoard[Math.floor(val / 3)][val % 3] = move;
+        squareElement.classList.add('marked');
+        squareElement.textContent = move;
+    }
+
+    function isHuman() {
+        return type === 'human';
+    }
+
+    function getName() {
+        return name;
+    }
+
+    function isTurn(toCompare) {
+        return move === toCompare;
+    }
+
+    let handleMove = isHuman() ? handlePlayerMove : handleAIMove;
+
+    return { handleMove, isHuman, getName, isTurn };
+}
+
+const roundController = (function () {
+    const gameBoard = [
+        [null, null, null],
+        [null, null, null],
+        [null, null, null]
+    ];
+    let gameEnd = false;
+    let currentPlayer = null;
+    let player1, player2;
+
+    function switchPlayer() {
+        currentPlayer = currentPlayer === player1 ? player2 : player1;
     }
 
     function addSquareEventListener() {
         const squareElements = document.querySelectorAll('.square');
-        squareElements.forEach(squareElement => {
+        squareElements.forEach((squareElement) => {
             squareElement.addEventListener('click', (e) => {
-                if (squareElement.classList.contains('marked') || gameEnd || 
-                (move !== playerMove && gameType !== 'pvp'))
+                if (squareElement.classList.contains('marked') || gameEnd || !currentPlayer.isHuman())
                     return;
 
-                handlePlayerMove(e.target, squareElement);
-                playRound();
+                currentPlayer.handleMove(gameBoard, e.target, squareElement);
+                checkGameState();
+                if (!gameEnd) {
+                    switchPlayer();
+                    if (!currentPlayer.isHuman()) {
+                        aiTurn();
+                    }
+                }
             });
         });
     }
 
-    function handlePlayerMove(target, squareElement) {
-        let val = target.value - 1;
-        gameBoard[Math.floor(val / 3)][val % 3] = move;
-        target.textContent = move;
-        move = move === 'X' ? 'O' : 'X';
-        squareElement.classList.add('marked');
-    }
-
-    function handleAIMove() {
-        // ACCURACY IS 100 RIGHT NOW!
-        const aiMove = AIController.getAIMove(gameBoard, 100, playerMove === 'X' ? 'O' : 'X');
-        const { i, j } = aiMove;
-
-        gameBoard[i][j] = move;
-
-        const squareIndex = i * 3 + j;
-        const squareElement = document.querySelectorAll('.square')[squareIndex];
-        squareElement.textContent = move;
-        squareElement.classList.add('marked');
-        move = playerMove;
+    async function aiTurn() {
+        while (!gameEnd && !currentPlayer.isHuman()) {
+            await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate AI thinking time
+            currentPlayer.handleMove(gameBoard);
+            checkGameState();
+            if (!gameEnd) {
+                switchPlayer();
+            }
+        }
     }
 
     function checkGameState() {
@@ -196,39 +224,27 @@ const roundController = (function() {
             headerElement.textContent = 'Draw!';
             gameEnd = true;
         } else if (winner) {
-            headerElement.textContent = 'Winner is: ' + winner;
+            headerElement.textContent = 'Winner is: ' + currentPlayer.getName();
             gameEnd = true;
         }
     }
 
-    async function playRound() {
-        checkGameState();
-        if (!gameEnd && gameType !== 'pvp') {
-            await new Promise(resolve => setTimeout(resolve, 500)); // Simulate AI thinking time
-            handleAIMove();
-            checkGameState();
+    async function startGame(p1, p2) {
+        player1 = p1;
+        player2 = p2;
+        currentPlayer = player1;
+        gameEnd = false;
+        addSquareEventListener();
+        const headerElement = document.querySelector('.header');
+        headerElement.textContent = `${player1.getName()} vs ${player2.getName()}`;
+
+        // Start the game loop for AI vs AI automatically
+        if (!currentPlayer.isHuman()) {
+            await aiTurn();
         }
     }
 
-    async function startGame(_gameType, playersMove) {
-        initBoard();
-        gameType = _gameType;
-        if (gameType === "pva") {
-            addSquareEventListener();
-            playerMove = playersMove;
-            if (move !== playerMove) {
-                await new Promise(resolve => setTimeout(resolve, 500)); // Simulate AI thinking time
-                handleAIMove();
-            } 
-        } else if (gameType === "pvp") {
-            addSquareEventListener();
-            playersMove = playersMove;
-        } else {
-            playRound();
-        }
-    }
-
-    return {startGame}
+    return { startGame };
 })();
 
 const UI = (function() {
@@ -264,11 +280,11 @@ const UI = (function() {
             typeElement.addEventListener('click', (e) => {
                 const type = e.target.classList[e.target.classList.length - 1];
                 if (type === 'pvp') {
-                    initRound(type, 'X');
+                    initRound(createPlayer('human', 'alice', null, 'X'), createPlayer('human', 'bob', null, 'O'));
                 } else if (type === 'pva') {
                     initStart();
                 } else {
-                    initRound(type, 'X');
+                    initRound(createPlayer('bot', 'bot1', 100, 'X'), createPlayer('bot', 'bot2', 100, 'O'));
                 }
             })
             containerElement.appendChild(typeElement);
@@ -291,7 +307,11 @@ const UI = (function() {
         [xButton, yButton].forEach(btn => {
             btn.addEventListener('click', (e) => {
                 move = e.target.textContent;
-                initRound('pva', move);
+                if (move === 'X') {
+                    initRound(createPlayer('human', 'bob', null, 'X'), createPlayer('bot', 'bot2', 100, 'O'));
+                } else {
+                    initRound(createPlayer('bot', 'bot1', 100, 'X'), createPlayer('human', 'bob', null, 'O'));
+                }
             })
             containerElement.appendChild(btn);
         })
@@ -299,7 +319,7 @@ const UI = (function() {
         containerElement.classList.add('move');
     }
 
-    function initRound(gameType, playerMove) {
+    function initRound(player1, player2) {
         unload();
         const headerElement = document.querySelector('.header');
         const containerElement = document.querySelector('.container');
@@ -315,7 +335,7 @@ const UI = (function() {
         containerElement.classList.remove('gamemode', 'move');
         containerElement.classList.add('play');
 
-        roundController.startGame(gameType, playerMove);
+        roundController.startGame(player1, player2);
     }
 
     return {initGamemode};
