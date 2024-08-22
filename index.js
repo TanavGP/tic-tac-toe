@@ -1,3 +1,17 @@
+(function() {
+    function setDynamicViewport() {
+        let vh = window.innerHeight * 0.01;
+        let vw = window.innerWidth * 0.01;
+    
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+        document.documentElement.style.setProperty('--vw', `${vw}px`);
+    }
+    
+    window.addEventListener('resize', setDynamicViewport);
+    window.addEventListener('load', setDynamicViewport);
+    window.addEventListener('orientationchange', setDynamicViewport);
+})();
+
 const AIController = (function() {
     function getAIMove(gameBoard, accuracy, MyMove) {
         let rand = Math.floor(Math.random() * 100);
@@ -139,7 +153,7 @@ const winChecker = (function() {
     return {compute};
 })();
 
-function createPlayer(type, name, accuracy, move) {
+function createPlayer(type, name, move, accuracy, speed) {
     function handleAIMove(gameBoard) {
         const aiMove = AIController.getAIMove(gameBoard, accuracy, move);
         const { i, j } = aiMove;
@@ -168,9 +182,19 @@ function createPlayer(type, name, accuracy, move) {
         return move === toCompare;
     }
 
+    function getSpeed() {
+        return speed;
+    }
+
     let handleMove = isHuman() ? handlePlayerMove : handleAIMove;
 
-    return { handleMove, isHuman, getName, isTurn };
+    return {
+        handleMove,
+        isHuman,
+        getName,
+        isTurn,
+        ...(isHuman() ? {} : { getSpeed }) // Conditionally include getSpeed only if the player is not human
+    };
 }
 
 const roundController = (function () {
@@ -182,6 +206,7 @@ const roundController = (function () {
     let gameEnd = false;
     let currentPlayer = null;
     let player1, player2;
+    let autoPlay = false;
 
     function switchPlayer() {
         currentPlayer = currentPlayer === player1 ? player2 : player1;
@@ -208,7 +233,7 @@ const roundController = (function () {
 
     async function aiTurn() {
         while (!gameEnd && !currentPlayer.isHuman()) {
-            await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate AI thinking time
+            await new Promise((resolve) => setTimeout(resolve, 500 - 4 * currentPlayer.getSpeed())); // Simulate AI thinking time
             currentPlayer.handleMove(gameBoard);
             checkGameState();
             if (!gameEnd) {
@@ -227,13 +252,42 @@ const roundController = (function () {
             headerElement.textContent = 'Winner is: ' + currentPlayer.getName();
             gameEnd = true;
         }
+
+        // auto play
+        if (gameEnd && autoPlay) {
+            resetGame();
+        }
     }
 
-    async function startGame(p1, p2) {
+    async function resetGame() {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        
+        for (let i = 0; i < 3; i++)
+            gameBoard[i] = [null, null, null];
+
+        const markedElements = document.querySelectorAll('.marked');
+        markedElements.forEach(markedElement => {
+            markedElement.classList.remove('marked')
+            markedElement.textContent = '';
+        });
+
+        const headerElement = document.querySelector('.header');
+        headerElement.textContent = `${player1.getName()} vs ${player2.getName()}`;
+
+        currentPlayer = player1;
+        gameEnd = false;
+
+        if (!currentPlayer.isHuman()) {
+            await aiTurn();
+        }
+    }
+
+    async function startGame(p1, p2, autoPlaySetting) {
         player1 = p1;
         player2 = p2;
         currentPlayer = player1;
         gameEnd = false;
+        autoPlay = autoPlaySetting;
         addSquareEventListener();
         const headerElement = document.querySelector('.header');
         headerElement.textContent = `${player1.getName()} vs ${player2.getName()}`;
@@ -248,7 +302,16 @@ const roundController = (function () {
 })();
 
 const UI = (function() {
-    let move = 'X';
+    const defaultNames = {
+        human : {
+            1 : 'Adam',
+            2 : 'Eve'
+        },
+        ai : {
+            1 : 'SAL 9000',
+            2 : 'HAL 9000'
+        }
+    };
 
     function unload() {
         const headerElement = document.querySelector('.header');
@@ -256,67 +319,6 @@ const UI = (function() {
 
         headerElement.replaceChildren();
         containerElement.replaceChildren();
-    }
-
-    function initGamemode() {
-        unload();
-        const headerElement = document.querySelector('.header');
-        const containerElement = document.querySelector('.container');
-
-        headerElement.textContent = 'Choose Your Gamemode!';
-        const pvpDiv = document.createElement('button');
-        pvpDiv.textContent = 'Player vs Player';
-        pvpDiv.classList.add('pvp');
-
-        const pvaDiv = document.createElement('button');
-        pvaDiv.textContent = 'Player vs AI';
-        pvaDiv.classList.add('pva');
-
-        const avaDiv = document.createElement('button');
-        avaDiv.textContent = 'AI vs AI';
-        avaDiv.classList.add('ava');
-
-        [pvpDiv, pvaDiv, avaDiv].forEach(typeElement => {
-            typeElement.addEventListener('click', (e) => {
-                const type = e.target.classList[e.target.classList.length - 1];
-                if (type === 'pvp') {
-                    initRound(createPlayer('human', 'alice', null, 'X'), createPlayer('human', 'bob', null, 'O'));
-                } else if (type === 'pva') {
-                    initStart();
-                } else {
-                    initRound(createPlayer('bot', 'bot1', 100, 'X'), createPlayer('bot', 'bot2', 100, 'O'));
-                }
-            })
-            containerElement.appendChild(typeElement);
-        })
-
-        containerElement.classList.add('gamemode');
-    }
-
-    function initStart() {
-        unload();
-        const headerElement = document.querySelector('.header');
-        const containerElement = document.querySelector('.container');
-
-        headerElement.textContent = 'Choose Your Move!';
-
-        const xButton = document.createElement('button');
-        xButton.textContent = 'X';
-        const yButton = document.createElement('button');
-        yButton.textContent = 'O';
-        [xButton, yButton].forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                move = e.target.textContent;
-                if (move === 'X') {
-                    initRound(createPlayer('human', 'bob', null, 'X'), createPlayer('bot', 'bot2', 100, 'O'));
-                } else {
-                    initRound(createPlayer('bot', 'bot1', 100, 'X'), createPlayer('human', 'bob', null, 'O'));
-                }
-            })
-            containerElement.appendChild(btn);
-        })
-        containerElement.classList.remove('gamemode');
-        containerElement.classList.add('move');
     }
 
     function initRound(player1, player2) {
@@ -335,13 +337,188 @@ const UI = (function() {
         containerElement.classList.remove('gamemode', 'move');
         containerElement.classList.add('play');
 
-        roundController.startGame(player1, player2);
+        const autoPlay = document.querySelector('.auto-play-button').getAttribute('value') === 'ON';
+
+        // delete the control buttons
+        document.querySelector('.play-button').remove();
+        document.querySelector('.auto-play-button').remove();
+
+        roundController.startGame(player1, player2, autoPlay);
     }
 
-    return {initGamemode};
-})();
+    function startGame() {
+        const containerElement = document.querySelector('.container-start');
+        containerElement.classList.remove('container-start');
+        containerElement.classList.add('container');
 
-const gameController = (function() {
-    //UI.initStart();
-    UI.initGamemode();
+        const playerContainers = document.querySelectorAll('.player-container');
+
+        const players = [];
+        const turn = ['X', 'O'];
+        playerContainers.forEach(playerContainer => {
+            const playerNumber = playerContainer.getAttribute('value');
+            const name = playerContainer.querySelector('.player-header').textContent;
+            if (playerContainer.getAttribute('data-player-type') === 'human') {
+                players.push(createPlayer('human', name, turn[playerNumber - 1]));
+            } else {
+                const accuracy = document.getElementById('accuracy-' + playerNumber).getAttribute('value');
+                const speed = document.getElementById('speed-' + playerNumber).getAttribute('value');
+                players.push(createPlayer('ai', name, turn[playerNumber - 1], accuracy, speed));
+            }
+        })
+
+        initRound(players[0], players[1]);
+    }
+
+    function changePlayerForm(playerButton) {
+        const playerContainer = playerButton.closest('.player-container');
+        const playerNumber = playerContainer.getAttribute('value');
+        const playerType = playerButton.getAttribute('value');
+        
+        setupPlayerContainer(playerContainer, playerType, playerNumber);
+    }
+
+    function setupPlayerContainer(playerContainer, playerType, playerNumber) {
+        playerContainer.replaceChildren();
+        playerContainer.classList.add('player-container');
+        playerContainer.setAttribute('value', playerNumber);
+        playerContainer.setAttribute('data-player-type', playerType);
+
+        const playerHeader = document.createElement('div');
+        playerHeader.classList.add('player-header');
+        playerHeader.textContent = defaultNames[playerType][playerNumber];
+        playerContainer.appendChild(playerHeader);
+        
+        const switchContainer = document.createElement('div');
+        switchContainer.classList.add('switch-container');
+
+        const humanButton = document.createElement('button'); // FOR HUMAN
+        humanButton.classList.add('switch');
+        humanButton.setAttribute('value', 'human');
+        humanButton.disabled = playerType === 'human';
+        humanButton.textContent = 'Human';
+
+        const aiButton = document.createElement('button');   // FOR if AI
+        aiButton.classList.add('switch');
+        aiButton.setAttribute('value', 'ai');
+        aiButton.disabled = playerType !== 'human';
+        aiButton.textContent = 'AI';
+
+        [aiButton, humanButton].forEach(button => {
+            button.addEventListener('click', (event) => {
+                changePlayerForm(event.target);
+            })
+        })
+
+        switchContainer.appendChild(humanButton);
+        switchContainer.appendChild(aiButton);
+
+        playerContainer.appendChild(switchContainer);
+
+        // take care of inputs
+        if (playerType === 'human') {
+            const nameLabel = document.createElement('label');
+            nameLabel.setAttribute('for', 'name-' + playerNumber);
+            nameLabel.textContent = "Human's Name";
+    
+            const nameInput = document.createElement('input');
+            nameInput.setAttribute('type', 'text');
+            nameInput.setAttribute('id', 'name-' + playerNumber);
+            nameInput.addEventListener('input', (event) => {
+                const playerHeaderElement = event.target.closest('.player-container')
+                                                        .querySelector('.player-header');
+                playerHeaderElement.textContent = event.target.value !== '' ? event.target.value : 
+                defaultNames['human'][event.target.closest('.player-container').getAttribute('value')];
+            })
+    
+            playerContainer.appendChild(nameLabel);
+            playerContainer.appendChild(nameInput);
+        } else if (playerType === 'ai') {
+            // Create Accuracy scrollbar container
+            const accuracyContainer = document.createElement('div');
+            accuracyContainer.classList.add('scrollbar-container');
+
+            const accuracyLabel = document.createElement('label');
+            accuracyLabel.setAttribute('for', 'accuracy-' + playerNumber);
+            accuracyLabel.textContent = "Accuracy";
+
+            const accuracyInput = document.createElement('input');
+            accuracyInput.setAttribute('type', 'range');
+            accuracyInput.setAttribute('id', 'accuracy-' + playerNumber);
+            accuracyInput.setAttribute('min', '0');
+            accuracyInput.setAttribute('max', '100');
+            accuracyInput.value = '0'; // Default value
+            accuracyInput.classList.add('custom-scrollbar');
+            accuracyInput.addEventListener('input', function() {
+                const value = this.value;
+                this.setAttribute('value', value);
+            });
+
+            accuracyContainer.appendChild(accuracyLabel);
+            accuracyContainer.appendChild(accuracyInput);
+            playerContainer.appendChild(accuracyContainer);
+
+            // Create Speed scrollbar container
+            const speedContainer = document.createElement('div');
+            speedContainer.classList.add('scrollbar-container');
+
+            const speedLabel = document.createElement('label');
+            speedLabel.setAttribute('for', 'speed-' + playerNumber);
+            speedLabel.textContent = "Speed";
+
+            const speedInput = document.createElement('input');
+            speedInput.setAttribute('type', 'range');
+            speedInput.setAttribute('id', 'speed-' + playerNumber);
+            speedInput.setAttribute('min', '0');
+            speedInput.setAttribute('max', '100');
+            speedInput.value = '0'; // Default value
+            speedInput.classList.add('custom-scrollbar');
+            speedInput.addEventListener('input', function() {
+                const value = this.value;
+                this.setAttribute('value', value);
+            });
+
+            speedContainer.appendChild(speedLabel);
+            speedContainer.appendChild(speedInput);
+            playerContainer.appendChild(speedContainer);
+        }
+    }
+
+    function initGame() {
+        const containerElement = document.querySelector('.container-start');
+
+        const playerForm1 = document.createElement('div');
+        const playerForm2 = document.createElement('div');
+        setupPlayerContainer(playerForm1, 'human', 1);
+        setupPlayerContainer(playerForm2, 'ai', 2);
+
+        containerElement.appendChild(playerForm1);
+        containerElement.appendChild(playerForm2);
+
+        const autoButton = document.createElement('button');
+        autoButton.classList.add('auto-play-button');
+        autoButton.textContent = 'AUTO PLAY: OFF';
+        autoButton.setAttribute('value', 'OFF');
+        autoButton.addEventListener('click', (event) => {
+            if (event.target.getAttribute('value') === 'OFF') {
+                event.target.setAttribute('value', 'ON');
+                event.target.textContent = 'AUTO PLAY: ON';
+            } else {
+                event.target.setAttribute('value', 'OFF');
+                event.target.textContent = 'AUTO PLAY: OFF';
+            }
+        });
+        document.querySelector('body').appendChild(autoButton);
+
+        const playButton = document.createElement('button');
+        playButton.classList.add('play-button');
+        playButton.textContent = 'PLAY';
+        playButton.addEventListener('click', (event) => {
+            startGame();
+        });
+
+        document.querySelector('body').appendChild(playButton);
+    }
+
+    initGame();
 })();
