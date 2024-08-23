@@ -9,52 +9,100 @@ body {
     height: calc(100 * var(--vh));
     width: calc(100 * var(--vw));
     align-content: center;
-    justify-content: center;
     text-align: center;
-}
 
-.container-start {
-    display: flex;
-    flex-direction: row;
-}
+    /* Background Color Properties */
+    --footer-bg-color: none;
 
-.player-container {
-    flex-grow: 1;
+    /* Text Color Properties */
+    --footer-first-link-text-color: purple;
+    --footer-second-link-text-color: purple;
+
+    /* Size Properties */
+    --square-edge-length: min(200px, calc(25 * var(--vw)));
+
+    /* Font Styles */
+    font-family: sans-serif;
 }
 
 .header {
     font-size: 3rem;
 }
 
+.container-start {
+    display: flex;
+    flex-direction: row;
+    height: 350px;
+}
+
+.player-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.player-container[value="1"] .player-header {
+    align-self: flex-end;
+    margin-right: calc(2 * var(--vw));
+}
+
+.player-container[value="2"] .player-header {
+    align-self: flex-start;
+    margin-left: calc(2 * var(--vw));
+}
+
+
+.player-header {
+    font-size: 2rem;
+}
+
 .container {
     justify-content: center;
     display: grid;
-    grid-template-rows: repeat(3, 200px);
+    grid-template-rows: repeat(3, var(--square-edge-length));
+    grid-template-columns: repeat(3, var(--square-edge-length));
     gap: 5px;
 }
 
-.move {
-    grid-template-columns: 400px 400px;
-}
-
-.play {
-    grid-template-columns: repeat(3, 200px);
-}
-
-.gamemode {
-    grid-template-columns: 400px;
-}
-
-button:hover {
+button:focus {
     filter: brightness(0.8);
 }
 
-.scrollbar-container {
+.control-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.play-button {
+    width: 50%;
+}
+
+.footer {
+    position: fixed;
+    bottom: 0;
     width: 100%;
-    padding: 10px;
+    background-color: var(--footer-bg-color);
+}
+
+.footer > a {
+    text-decoration: none;
+}
+
+.footer > a:first-child {
+    color: var(--footer-first-link-text-color);
+}
+
+.footer > a:last-child {
+    color: var(--footer-second-link-text-color);
 }
 
 /* SCROLLBAR */
+.scrollbar-container {
+    width: 80%;
+    padding: 10px;
+}
 
 .custom-scrollbar {
     width: 100%;
@@ -87,3 +135,23 @@ button:hover {
     border-radius: 50%;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
 }
+
+/* SVGs */
+.svg {
+    aspect-ratio: 1 / 1;
+    mask-repeat: no-repeat;
+    mask-size: contain;
+}
+
+.human-svg {
+    mask-image: url(graphics/svgs/human.svg);
+    background-color: red;
+    height: 40px;
+}
+
+.ai-svg {
+    mask-image: url(graphics/svgs/ai.svg);
+    background-color: rgb(47, 255, 75);
+    height: 40px;
+}
+

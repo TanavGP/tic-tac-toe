@@ -207,6 +207,8 @@ const roundController = (function () {
     let currentPlayer = null;
     let player1, player2;
     let autoPlay = false;
+    let scorePlayer1 = 0, scorePlayer2 = 0, drawCount = 0;
+    const resetGameDelay = 1000; // in ms
 
     function switchPlayer() {
         currentPlayer = currentPlayer === player1 ? player2 : player1;
@@ -247,9 +249,11 @@ const roundController = (function () {
         const headerElement = document.querySelector('.header');
         if (winner === 'draw') {
             headerElement.textContent = 'Draw!';
+            drawCount++;
             gameEnd = true;
         } else if (winner) {
             headerElement.textContent = 'Winner is: ' + currentPlayer.getName();
+            currentPlayer === player1 ? scorePlayer1++ : scorePlayer2++;
             gameEnd = true;
         }
 
@@ -260,7 +264,7 @@ const roundController = (function () {
     }
 
     async function resetGame() {
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await new Promise((resolve) => setTimeout(resolve, resetGameDelay));
         
         for (let i = 0; i < 3; i++)
             gameBoard[i] = [null, null, null];
@@ -280,6 +284,8 @@ const roundController = (function () {
         if (!currentPlayer.isHuman()) {
             await aiTurn();
         }
+
+        console.log({scorePlayer1, drawCount, scorePlayer2}); // TESTING
     }
 
     async function startGame(p1, p2, autoPlaySetting) {
@@ -333,9 +339,6 @@ const UI = (function() {
             buttonElement.setAttribute('value', i);
             containerElement.appendChild(buttonElement);
         }
-
-        containerElement.classList.remove('gamemode', 'move');
-        containerElement.classList.add('play');
 
         const autoPlay = document.querySelector('.auto-play-button').getAttribute('value') === 'ON';
 
@@ -396,17 +399,27 @@ const UI = (function() {
         humanButton.classList.add('switch');
         humanButton.setAttribute('value', 'human');
         humanButton.disabled = playerType === 'human';
-        humanButton.textContent = 'Human';
+        const humanTextDiv = document.createElement('div'); // add text content
+        humanTextDiv.textContent = 'Human';
+        const humanSVGDiv = document.createElement('div');  // add the svg
+        humanSVGDiv.classList.add('svg', 'human-svg');
+        humanButton.appendChild(humanTextDiv);
+        humanButton.appendChild(humanSVGDiv);
 
         const aiButton = document.createElement('button');   // FOR if AI
         aiButton.classList.add('switch');
         aiButton.setAttribute('value', 'ai');
         aiButton.disabled = playerType !== 'human';
-        aiButton.textContent = 'AI';
+        const aiTextDiv = document.createElement('div'); // add text content
+        aiTextDiv.textContent = 'AI';
+        const aiSVGDiv = document.createElement('div');  // add the svg
+        aiSVGDiv.classList.add('svg', 'ai-svg');
+        aiButton.appendChild(aiTextDiv);
+        aiButton.appendChild(aiSVGDiv);
 
         [aiButton, humanButton].forEach(button => {
             button.addEventListener('click', (event) => {
-                changePlayerForm(event.target);
+                changePlayerForm(event.currentTarget);
             })
         })
 
@@ -424,6 +437,7 @@ const UI = (function() {
             const nameInput = document.createElement('input');
             nameInput.setAttribute('type', 'text');
             nameInput.setAttribute('id', 'name-' + playerNumber);
+            nameInput.setAttribute('maxLength', '8');
             nameInput.addEventListener('input', (event) => {
                 const playerHeaderElement = event.target.closest('.player-container')
                                                         .querySelector('.player-header');
@@ -447,7 +461,7 @@ const UI = (function() {
             accuracyInput.setAttribute('id', 'accuracy-' + playerNumber);
             accuracyInput.setAttribute('min', '0');
             accuracyInput.setAttribute('max', '100');
-            accuracyInput.value = '0'; // Default value
+            accuracyInput.value = '50'; // Default value
             accuracyInput.classList.add('custom-scrollbar');
             accuracyInput.addEventListener('input', function() {
                 const value = this.value;
@@ -471,7 +485,7 @@ const UI = (function() {
             speedInput.setAttribute('id', 'speed-' + playerNumber);
             speedInput.setAttribute('min', '0');
             speedInput.setAttribute('max', '100');
-            speedInput.value = '0'; // Default value
+            speedInput.value = '50'; // Default value
             speedInput.classList.add('custom-scrollbar');
             speedInput.addEventListener('input', function() {
                 const value = this.value;
@@ -484,17 +498,7 @@ const UI = (function() {
         }
     }
 
-    function initGame() {
-        const containerElement = document.querySelector('.container-start');
-
-        const playerForm1 = document.createElement('div');
-        const playerForm2 = document.createElement('div');
-        setupPlayerContainer(playerForm1, 'human', 1);
-        setupPlayerContainer(playerForm2, 'ai', 2);
-
-        containerElement.appendChild(playerForm1);
-        containerElement.appendChild(playerForm2);
-
+    function getAutoPlayButton() {
         const autoButton = document.createElement('button');
         autoButton.classList.add('auto-play-button');
         autoButton.textContent = 'AUTO PLAY: OFF';
@@ -508,16 +512,44 @@ const UI = (function() {
                 event.target.textContent = 'AUTO PLAY: OFF';
             }
         });
-        document.querySelector('body').appendChild(autoButton);
+        return autoButton;
+    }
 
+    function getPlayButton() {
         const playButton = document.createElement('button');
         playButton.classList.add('play-button');
         playButton.textContent = 'PLAY';
         playButton.addEventListener('click', (event) => {
             startGame();
         });
+        return playButton;
+    }
 
-        document.querySelector('body').appendChild(playButton);
+    function addControlButtons() {
+        const controlElement = document.createElement('div');
+        controlElement.classList.add('control-container');
+
+        controlElement.appendChild(getAutoPlayButton());
+        controlElement.appendChild(getPlayButton());
+
+        // Insert before footer
+        const footerElement = document.querySelector('.footer');
+        footerElement.before(controlElement);
+    }
+
+    function initGame() {
+        const containerElement = document.querySelector('.container-start');
+
+        const playerForm1 = document.createElement('div');
+        const playerForm2 = document.createElement('div');
+        setupPlayerContainer(playerForm1, 'human', 1);
+        setupPlayerContainer(playerForm2, 'ai', 2);
+
+        containerElement.appendChild(playerForm1);
+        containerElement.appendChild(playerForm2);
+        
+        // Handle control Elements
+        addControlButtons();
     }
 
     initGame();
