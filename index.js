@@ -396,14 +396,20 @@ const UI = (function() {
         switchContainer.classList.add('switch-container');
 
         const humanButton = document.createElement('button'); // FOR HUMAN
-        humanButton.classList.add('switch', 'svg', 'human-svg');
+        humanButton.classList.add('switch');
         humanButton.setAttribute('value', 'human');
         humanButton.disabled = playerType === 'human';
+        const humanSVGDiv = document.createElement('div');
+        humanSVGDiv.classList.add('svg', 'human-svg');
+        humanButton.appendChild(humanSVGDiv);
 
         const aiButton = document.createElement('button');   // FOR if AI
-        aiButton.classList.add('switch', 'svg', 'ai-svg');
+        aiButton.classList.add('switch');
         aiButton.setAttribute('value', 'ai');
         aiButton.disabled = playerType !== 'human';
+        const aiSVGDiv = document.createElement('div');
+        aiSVGDiv.classList.add('svg', 'ai-svg');
+        aiButton.appendChild(aiSVGDiv);
 
         [aiButton, humanButton].forEach(button => {
             button.addEventListener('click', (event) => {
@@ -429,7 +435,8 @@ const UI = (function() {
             nameInput.addEventListener('input', (event) => {
                 const playerHeaderElement = event.target.closest('.player-container')
                                                         .querySelector('.player-header');
-                playerHeaderElement.textContent = event.target.value !== '' ? event.target.value : 
+                const trimmedText = event.target.value.trim();
+                playerHeaderElement.textContent = trimmedText !== '' ? trimmedText : 
                 defaultNames['human'][event.target.closest('.player-container').getAttribute('value')];
             })
             

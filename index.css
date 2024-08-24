@@ -15,17 +15,17 @@ body {
     background-image: radial-gradient(rgb(12, 2, 69), black);
     --human-container-bg-color: rgb(5, 47, 110);
     --ai-container-bg-color: rgb(19, 71, 7);
-    --human-switch-button-hover-bg-color: transparent;
-    --ai-switch-button-hover-bg-color: transparent;
-    --footer-bg-color: none;
+    --human-switch-button-hover-bg-color: rgb(166, 0, 0);
+    --ai-switch-button-hover-bg-color: rgb(1, 139, 1);
+    --footer-bg-color: rgb(0, 0, 0);
 
     /* Text Color Properties */
     color: white;
-    --footer-first-link-text-color: purple;
-    --footer-second-link-text-color: purple;
+    --footer-first-link-text-color: rgb(166, 5, 8);
+    --footer-second-link-text-color: rgb(4, 68, 163);
 
     /* Size Properties */
-    --switch-svg-size: 50px;
+    --switch-svg-size: clamp(30px, 5vw, 50px);
     --square-edge-length: min(200px, calc(25 * var(--vw)));
 
     /* Font Styles */
@@ -75,20 +75,44 @@ body {
 input {
     width: 80%;
     height: 50px;
+    text-align: center;
+    border: none;
+    border-radius: 5px;
+    outline: none;
+    font-size: clamp(0.8rem, 2vw, 1.2rem);
+}
+
+input:focus {
+    box-shadow: 0 0 5px 1px rgb(0, 255, 255, 0.4);
 }
 
 .player-header {
-    font-size: 2rem;
+    font-size: clamp(1rem, 3vw, 2rem);
     margin: 20px 0;
 }
 
-button:not(:disabled):hover.switch[value="human"] {
-    /* background-color: var(--human-switch-button-hover-bg-color); */
+.switch {
+    background: none;
+    border: none;
+}
+
+.switch .svg {
+    margin-bottom: 5px;
+}
+
+.switch:disabled {
+    border-bottom: 2px solid rgb(0, 255, 255, 0.3);
+}
+
+button:not(:disabled):hover.switch[value="human"] .svg {
+    background-color: var(--human-switch-button-hover-bg-color);
+    cursor: pointer;
     transition: all 0.3s ease-in-out;
 }
 
-button:not(:disabled):hover.switch[value="ai"] {
-    /* background-color: var(--ai-switch-button-hover-bg-color); */
+button:not(:disabled):hover.switch[value="ai"] .svg {
+    background-color: var(--ai-switch-button-hover-bg-color);
+    cursor: pointer;
     transition: all 0.3s ease-in-out;
 }
 
@@ -105,8 +129,41 @@ button:not(:disabled):hover.switch[value="ai"] {
     align-items: center;
 }
 
-.play-button {
+.auto-play-button {
     width: 50%;
+    height: fit-content;
+    margin-bottom: 20px;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    font-size: clamp(0.7rem, 2vw, 1.2rem);
+    color: aquamarine;
+    background-color: rgb(40, 0, 120);
+    padding: 10px;
+    cursor: pointer;    
+    transition: 0.3s ease-in-out;
+}
+
+.auto-play-button:hover {
+    background-color: rgb(32, 2, 92);
+}
+
+.play-button {
+    width: 90%;
+    height: fit-content;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    font-size: clamp(1rem, 5vw, 2rem);
+    color: aquamarine;
+    background-color: rgb(40, 0, 120);
+    padding: 10px;
+    cursor: pointer;
+    transition: 0.3s ease-in-out;
+}
+
+.play-button:hover {
+    background-color: rgb(32, 2, 92);
 }
 
 .footer {
@@ -114,6 +171,8 @@ button:not(:disabled):hover.switch[value="ai"] {
     bottom: 0;
     width: 100%;
     background-color: var(--footer-bg-color);
+    font-size: clamp(0.8rem, 2vw, 1rem);
+    padding: 10px 0;
 }
 
 .footer > a {
@@ -126,6 +185,10 @@ button:not(:disabled):hover.switch[value="ai"] {
 
 .footer > a:last-child {
     color: var(--footer-second-link-text-color);
+}
+
+.footer > a:hover {
+    filter: brightness(0.8);
 }
 
 /* To bring together the player headers  */
@@ -154,7 +217,7 @@ button:not(:disabled):hover.switch[value="ai"] {
     -webkit-appearance: none;
     appearance: none;
     height: 10px;
-    background: #ddd;
+    background: #9ffff4;
     outline: none;
     opacity: 0.7;
     transition: opacity 0.15s ease-in-out;
