@@ -396,26 +396,14 @@ const UI = (function() {
         switchContainer.classList.add('switch-container');
 
         const humanButton = document.createElement('button'); // FOR HUMAN
-        humanButton.classList.add('switch');
+        humanButton.classList.add('switch', 'svg', 'human-svg');
         humanButton.setAttribute('value', 'human');
         humanButton.disabled = playerType === 'human';
-        const humanTextDiv = document.createElement('div'); // add text content
-        humanTextDiv.textContent = 'Human';
-        const humanSVGDiv = document.createElement('div');  // add the svg
-        humanSVGDiv.classList.add('svg', 'human-svg');
-        humanButton.appendChild(humanTextDiv);
-        humanButton.appendChild(humanSVGDiv);
 
         const aiButton = document.createElement('button');   // FOR if AI
-        aiButton.classList.add('switch');
+        aiButton.classList.add('switch', 'svg', 'ai-svg');
         aiButton.setAttribute('value', 'ai');
         aiButton.disabled = playerType !== 'human';
-        const aiTextDiv = document.createElement('div'); // add text content
-        aiTextDiv.textContent = 'AI';
-        const aiSVGDiv = document.createElement('div');  // add the svg
-        aiSVGDiv.classList.add('svg', 'ai-svg');
-        aiButton.appendChild(aiTextDiv);
-        aiButton.appendChild(aiSVGDiv);
 
         [aiButton, humanButton].forEach(button => {
             button.addEventListener('click', (event) => {
@@ -444,9 +432,12 @@ const UI = (function() {
                 playerHeaderElement.textContent = event.target.value !== '' ? event.target.value : 
                 defaultNames['human'][event.target.closest('.player-container').getAttribute('value')];
             })
-    
-            playerContainer.appendChild(nameLabel);
-            playerContainer.appendChild(nameInput);
+            
+            const inputElement = document.createElement('div');
+            inputElement.classList.add('input-container');
+            inputElement.appendChild(nameLabel);
+            inputElement.appendChild(nameInput);
+            playerContainer.appendChild(inputElement);
         } else if (playerType === 'ai') {
             // Create Accuracy scrollbar container
             const accuracyContainer = document.createElement('div');
@@ -454,7 +445,7 @@ const UI = (function() {
 
             const accuracyLabel = document.createElement('label');
             accuracyLabel.setAttribute('for', 'accuracy-' + playerNumber);
-            accuracyLabel.textContent = "Accuracy";
+            accuracyLabel.textContent = "Accuracy - 50";
 
             const accuracyInput = document.createElement('input');
             accuracyInput.setAttribute('type', 'range');
@@ -465,12 +456,9 @@ const UI = (function() {
             accuracyInput.classList.add('custom-scrollbar');
             accuracyInput.addEventListener('input', function() {
                 const value = this.value;
+                this.previousElementSibling.textContent = "Accuracy - " + value;
                 this.setAttribute('value', value);
             });
-
-            accuracyContainer.appendChild(accuracyLabel);
-            accuracyContainer.appendChild(accuracyInput);
-            playerContainer.appendChild(accuracyContainer);
 
             // Create Speed scrollbar container
             const speedContainer = document.createElement('div');
@@ -478,7 +466,7 @@ const UI = (function() {
 
             const speedLabel = document.createElement('label');
             speedLabel.setAttribute('for', 'speed-' + playerNumber);
-            speedLabel.textContent = "Speed";
+            speedLabel.textContent = "Speed - 50";
 
             const speedInput = document.createElement('input');
             speedInput.setAttribute('type', 'range');
@@ -489,12 +477,17 @@ const UI = (function() {
             speedInput.classList.add('custom-scrollbar');
             speedInput.addEventListener('input', function() {
                 const value = this.value;
+                this.previousElementSibling.textContent = "Speed - " + value;
                 this.setAttribute('value', value);
             });
 
-            speedContainer.appendChild(speedLabel);
-            speedContainer.appendChild(speedInput);
-            playerContainer.appendChild(speedContainer);
+            const inputElement = document.createElement('div');
+            inputElement.classList.add('input-container');
+            inputElement.appendChild(accuracyLabel);
+            inputElement.appendChild(accuracyInput);
+            inputElement.appendChild(speedLabel);
+            inputElement.appendChild(speedInput);
+            playerContainer.appendChild(inputElement);
         }
     }
 
@@ -537,11 +530,19 @@ const UI = (function() {
         footerElement.before(controlElement);
     }
 
+    function addVSElement() {
+        const containerElement = document.querySelector('.container-start');
+        const vsDiv = document.createElement('div');
+        vsDiv.classList.add('vs', 'svg', 'vs-svg');
+        containerElement.appendChild(vsDiv);
+    }
+
     function initGame() {
         const containerElement = document.querySelector('.container-start');
 
         const playerForm1 = document.createElement('div');
         const playerForm2 = document.createElement('div');
+
         setupPlayerContainer(playerForm1, 'human', 1);
         setupPlayerContainer(playerForm2, 'ai', 2);
 
@@ -550,6 +551,8 @@ const UI = (function() {
         
         // Handle control Elements
         addControlButtons();
+
+        addVSElement();
     }
 
     initGame();

@@ -12,13 +12,20 @@ body {
     text-align: center;
 
     /* Background Color Properties */
+    background-image: radial-gradient(rgb(12, 2, 69), black);
+    --human-container-bg-color: rgb(5, 47, 110);
+    --ai-container-bg-color: rgb(19, 71, 7);
+    --human-switch-button-hover-bg-color: transparent;
+    --ai-switch-button-hover-bg-color: transparent;
     --footer-bg-color: none;
 
     /* Text Color Properties */
+    color: white;
     --footer-first-link-text-color: purple;
     --footer-second-link-text-color: purple;
 
     /* Size Properties */
+    --switch-svg-size: 50px;
     --square-edge-length: min(200px, calc(25 * var(--vw)));
 
     /* Font Styles */
@@ -30,43 +37,66 @@ body {
 }
 
 .container-start {
-    display: flex;
-    flex-direction: row;
+    margin: 40px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     height: 350px;
+    position: relative;
 }
 
 .player-container {
-    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.player-container[data-player-type="human"] {
+    background-color: var(--human-container-bg-color);
+}
+
+.player-container[data-player-type="ai"] {
+    background-color: var(--ai-container-bg-color);
+}
+
+.switch-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.input-container {
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 10px;
+    margin: auto 0;
 }
 
-.player-container[value="1"] .player-header {
-    align-self: flex-end;
-    margin-right: calc(2 * var(--vw));
+input {
+    width: 80%;
+    height: 50px;
 }
-
-.player-container[value="2"] .player-header {
-    align-self: flex-start;
-    margin-left: calc(2 * var(--vw));
-}
-
 
 .player-header {
     font-size: 2rem;
+    margin: 20px 0;
 }
 
-.container {
-    justify-content: center;
-    display: grid;
-    grid-template-rows: repeat(3, var(--square-edge-length));
-    grid-template-columns: repeat(3, var(--square-edge-length));
-    gap: 5px;
+button:not(:disabled):hover.switch[value="human"] {
+    /* background-color: var(--human-switch-button-hover-bg-color); */
+    transition: all 0.3s ease-in-out;
 }
 
-button:focus {
-    filter: brightness(0.8);
+button:not(:disabled):hover.switch[value="ai"] {
+    /* background-color: var(--ai-switch-button-hover-bg-color); */
+    transition: all 0.3s ease-in-out;
+}
+
+.vs {
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 .control-container {
@@ -98,14 +128,29 @@ button:focus {
     color: var(--footer-second-link-text-color);
 }
 
-/* SCROLLBAR */
-.scrollbar-container {
-    width: 80%;
-    padding: 10px;
+/* To bring together the player headers  */
+/* .player-container[value="1"] .player-header {
+    align-self: flex-end;
+    margin-right: calc(10 * var(--vw));
 }
 
+.player-container[value="2"] .player-header {
+    align-self: flex-start;
+    margin-left: calc(10 * var(--vw));
+} */
+
+
+.container {
+    justify-content: center;
+    display: grid;
+    grid-template-rows: repeat(3, var(--square-edge-length));
+    grid-template-columns: repeat(3, var(--square-edge-length));
+    gap: 5px;
+}
+
+/* SCROLLBAR */
 .custom-scrollbar {
-    width: 100%;
+    width: 80%;
     -webkit-appearance: none;
     appearance: none;
     height: 10px;
@@ -146,12 +191,18 @@ button:focus {
 .human-svg {
     mask-image: url(graphics/svgs/human.svg);
     background-color: red;
-    height: 40px;
+    height: var(--switch-svg-size);
 }
 
 .ai-svg {
     mask-image: url(graphics/svgs/ai.svg);
     background-color: rgb(47, 255, 75);
-    height: 40px;
+    height: var(--switch-svg-size);
+}
+
+.vs-svg {
+    mask-image: url(graphics/svgs/vs.svg);
+    background-color: rgb(47, 255, 75);
+    height: var(--switch-svg-size);
 }
 
