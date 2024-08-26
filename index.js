@@ -162,6 +162,9 @@ function createPlayer(type, name, move, accuracy, speed) {
         squareElement.classList.add('marked');
         const svgDiv = document.createElement('div');
         svgDiv.classList.add('svg', move === 'X' ? 'cross-svg' : 'circle-svg');
+        setTimeout(() => {
+            svgDiv.classList.add('expand');
+        }, 10);
         squareElement.appendChild(svgDiv);
     }
 
@@ -171,6 +174,9 @@ function createPlayer(type, name, move, accuracy, speed) {
         squareElement.classList.add('marked');
         const svgDiv = document.createElement('div');
         svgDiv.classList.add('svg', move === 'X' ? 'cross-svg' : 'circle-svg');
+        setTimeout(() => {
+            svgDiv.classList.add('expand');
+        }, 10);
         squareElement.appendChild(svgDiv);
     }
 

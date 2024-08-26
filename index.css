@@ -299,12 +299,22 @@ button:not(:disabled):hover.switch[value="ai"] .svg {
 .cross-svg {
     mask-image: url(graphics/svgs/cross.svg);
     background-color: rgb(0, 0, 0);
+    transition: width 0.5s ease, height 0.5s ease;
+    height: 0;
+}
+
+.cross-svg.expand {
     height: 60%;
 }
 
 .circle-svg {
     mask-image: url(graphics/svgs/circle.svg);
     background-color: rgb(0, 0, 0);
+    transition: width 0.5s ease, height 0.5s ease;
+    height: 0;
+}
+
+.circle-svg.expand {
     height: 70%;
 }
 
@@ -319,4 +329,3 @@ button:not(:disabled):hover.switch[value="ai"] .svg {
     background-color: rgb(1, 216, 1);
     height: var(--game-control-svg-size);
 }
-
