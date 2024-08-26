@@ -1,14 +1,16 @@
 * {
     margin: 0;
     padding: 0;
-    /* border: none; */
     box-sizing: border-box;
 }
 
 body {
     height: calc(100 * var(--vh));
     width: calc(100 * var(--vw));
+    display: flex;
+    flex-direction: column;
     align-content: center;
+    justify-content: center;
     text-align: center;
 
     /* Background Color Properties */
@@ -26,14 +28,15 @@ body {
 
     /* Size Properties */
     --switch-svg-size: clamp(30px, 5vw, 50px);
-    --square-edge-length: min(200px, calc(25 * var(--vw)));
+    --square-edge-length: min(650px, calc(75 * var(--vw)));
+    --game-control-svg-size: min(70px, calc(7 * var(--vw)));
 
     /* Font Styles */
     font-family: sans-serif;
 }
 
 .header {
-    font-size: 3rem;
+    font-size: clamp(1.8rem, 5vw, 3rem);
 }
 
 .container-start {
@@ -79,7 +82,7 @@ input {
     border: none;
     border-radius: 5px;
     outline: none;
-    font-size: clamp(0.8rem, 2vw, 1.2rem);
+    font-size: clamp(1rem, 2vw, 1.2rem);
 }
 
 input:focus {
@@ -127,6 +130,26 @@ button:not(:disabled):hover.switch[value="ai"] .svg {
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+.control-container.in-game {
+    margin-top: 5px;
+    flex-direction: row;
+    align-self: center;
+    width: var(--square-edge-length);
+    gap: 5px;
+}
+
+.scoreboard {
+    flex-grow: 1;
+    font-size: clamp(1rem, 3.5vw, 2rem);
+    color: black;
+    border-radius: 2px;
+    background-color: rgb(238, 238, 238);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
 }
 
 .auto-play-button {
@@ -191,24 +214,28 @@ button:not(:disabled):hover.switch[value="ai"] .svg {
     filter: brightness(0.8);
 }
 
-/* To bring together the player headers  */
-/* .player-container[value="1"] .player-header {
-    align-self: flex-end;
-    margin-right: calc(10 * var(--vw));
+.container {
+    display: grid;
+    justify-content: center;
+    align-self: center;
+    width: var(--square-edge-length);
+    height: var(--square-edge-length);
+    grid-template-rows: repeat(3, 1fr);
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
 }
 
-.player-container[value="2"] .player-header {
-    align-self: flex-start;
-    margin-left: calc(10 * var(--vw));
-} */
-
-
-.container {
-    justify-content: center;
+.container > * {
     display: grid;
-    grid-template-rows: repeat(3, var(--square-edge-length));
-    grid-template-columns: repeat(3, var(--square-edge-length));
-    gap: 5px;
+    place-items: center;
+}
+
+.win-square {
+    background-color: green;
+}
+
+.win-square > .win-svg {
+    background-color: white;
 }
 
 /* SCROLLBAR */
@@ -267,5 +294,29 @@ button:not(:disabled):hover.switch[value="ai"] .svg {
     mask-image: url(graphics/svgs/vs.svg);
     background-color: rgb(47, 255, 75);
     height: var(--switch-svg-size);
+}
+
+.cross-svg {
+    mask-image: url(graphics/svgs/cross.svg);
+    background-color: rgb(0, 0, 0);
+    height: 60%;
+}
+
+.circle-svg {
+    mask-image: url(graphics/svgs/circle.svg);
+    background-color: rgb(0, 0, 0);
+    height: 70%;
+}
+
+.back-svg {
+    mask-image: url(graphics/svgs/back.svg);
+    background-color: rgb(255, 0, 0);
+    height: var(--game-control-svg-size);
+}
+
+.reset-svg {
+    mask-image: url(graphics/svgs/reset.svg);
+    background-color: rgb(1, 216, 1);
+    height: var(--game-control-svg-size);
 }
 

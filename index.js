@@ -30,9 +30,9 @@ const AIController = (function() {
             draw: 0                              // Draw
         };
     
-        let winner = winChecker.compute(gameBoard);
-        if (winner !== null) {
-            return scores[winner];
+        let winnerCompute = winChecker.compute(gameBoard);
+        if (winnerCompute !== null) {
+            return scores[winnerCompute.winner];
         }
     
         if (isMaximizing) {
@@ -107,7 +107,7 @@ const winChecker = (function() {
     function checkRows(gameBoard) {
         for (let i = 0; i < 3; i++) {
             if (match(gameBoard[i][0], gameBoard[i][1], gameBoard[i][2])) {
-                return gameBoard[i][0];
+                return {winner: gameBoard[i][0], line: [[i, 0], [i, 1], [i, 2]]};
             }
         }
         return null;
@@ -116,7 +116,7 @@ const winChecker = (function() {
     function checkCol(gameBoard) {
         for (let i = 0; i < 3; i++) {
             if (match(gameBoard[0][i], gameBoard[1][i], gameBoard[2][i])) {
-                return gameBoard[0][i];
+                return {winner: gameBoard[0][i], line: [[0, i], [1, i], [2, i]]};
             }
         }
         return null;
@@ -124,10 +124,10 @@ const winChecker = (function() {
     
     function checkDiagonals(gameBoard) {
         if (match(gameBoard[0][0], gameBoard[1][1], gameBoard[2][2])) {
-            return gameBoard[0][0];
+            return {winner: gameBoard[1][1], line: [[0, 0], [1, 1], [2, 2]]};
         }
         if (match(gameBoard[0][2], gameBoard[1][1], gameBoard[2][0])) {
-            return gameBoard[0][2];
+            return {winner: gameBoard[1][1], line: [[0, 2], [1, 1], [2, 0]]};
         }
         return null;
     }
@@ -145,7 +145,7 @@ const winChecker = (function() {
         if (ans) {
             return ans;
         } else if (numberOfMoves === 9) {
-            return "draw";
+            return {winner: "draw", line: []};
         } 
         return null;
     }
@@ -160,14 +160,18 @@ function createPlayer(type, name, move, accuracy, speed) {
         gameBoard[i][j] = move;
         const squareElement = document.querySelectorAll('.square')[i * 3 + j];
         squareElement.classList.add('marked');
-        squareElement.textContent = move;
+        const svgDiv = document.createElement('div');
+        svgDiv.classList.add('svg', move === 'X' ? 'cross-svg' : 'circle-svg');
+        squareElement.appendChild(svgDiv);
     }
 
     function handlePlayerMove(gameBoard, target, squareElement) {
         let val = target.value - 1;
         gameBoard[Math.floor(val / 3)][val % 3] = move;
         squareElement.classList.add('marked');
-        squareElement.textContent = move;
+        const svgDiv = document.createElement('div');
+        svgDiv.classList.add('svg', move === 'X' ? 'cross-svg' : 'circle-svg');
+        squareElement.appendChild(svgDiv);
     }
 
     function isHuman() {
@@ -245,34 +249,53 @@ const roundController = (function () {
     }
 
     function checkGameState() {
-        let winner = winChecker.compute(gameBoard);
+        let winnerCompute = winChecker.compute(gameBoard);
         const headerElement = document.querySelector('.header');
-        if (winner === 'draw') {
+        if (winnerCompute !== null && winnerCompute.winner === 'draw') {
             headerElement.textContent = 'Draw!';
             drawCount++;
             gameEnd = true;
-        } else if (winner) {
+        } else if (winnerCompute !== null) {
             headerElement.textContent = 'Winner is: ' + currentPlayer.getName();
             currentPlayer === player1 ? scorePlayer1++ : scorePlayer2++;
             gameEnd = true;
+            drawWinnerLine(winnerCompute.line);
         }
-
+        updateScoreboard();
         // auto play
         if (gameEnd && autoPlay) {
-            resetGame();
+            resetGameWithDelay();
         }
     }
 
-    async function resetGame() {
+    function updateScoreboard() {
+        const scoreboard = document.querySelector('.scoreboard');
+        scoreboard.textContent = player1.getName() + ': ' + scorePlayer1 + ' Tie: ' + drawCount + ' '  + 
+                                 player2.getName() + ': ' + scorePlayer2;
+    }
+
+    function drawWinnerLine(line) {
+        const squareElements = document.querySelectorAll('.square');
+        line.forEach(coords => {
+            const value = 3 * coords[0] + coords[1];
+            squareElements[value].classList.add('win-square');
+            squareElements[value].children[0].classList.add('win-svg');
+        })
+    }
+
+    async function resetGameWithDelay() {
         await new Promise((resolve) => setTimeout(resolve, resetGameDelay));
-        
+        resetGame();
+    }
+
+    async function resetGame() {
         for (let i = 0; i < 3; i++)
             gameBoard[i] = [null, null, null];
 
         const markedElements = document.querySelectorAll('.marked');
         markedElements.forEach(markedElement => {
-            markedElement.classList.remove('marked')
-            markedElement.textContent = '';
+            markedElement.classList.remove('marked', 'win-square');
+            markedElement.replaceChildren();
         });
 
         const headerElement = document.querySelector('.header');
@@ -284,8 +307,12 @@ const roundController = (function () {
         if (!currentPlayer.isHuman()) {
             await aiTurn();
         }
+    }
 
-        console.log({scorePlayer1, drawCount, scorePlayer2}); // TESTING
+    function resetScoreboard() {
+        scorePlayer1 = 0;
+        scorePlayer2 = 0;
+        drawCount = 0;
     }
 
     async function startGame(p1, p2, autoPlaySetting) {
@@ -295,6 +322,7 @@ const roundController = (function () {
         gameEnd = false;
         autoPlay = autoPlaySetting;
         addSquareEventListener();
+        updateScoreboard();
         const headerElement = document.querySelector('.header');
         headerElement.textContent = `${player1.getName()} vs ${player2.getName()}`;
 
@@ -304,7 +332,7 @@ const roundController = (function () {
         }
     }
 
-    return { startGame };
+    return { startGame, resetGame, resetScoreboard };
 })();
 
 const UI = (function() {
@@ -331,7 +359,9 @@ const UI = (function() {
         unload();
         const headerElement = document.querySelector('.header');
         const containerElement = document.querySelector('.container');
+        const controlContainer = document.querySelector('.control-container');
 
+        // Add 3 X 3 Grid
         headerElement.textContent = 'Play!';
         for (let i = 1; i <= 9; i++) {
             const buttonElement = document.createElement('button');
@@ -339,6 +369,38 @@ const UI = (function() {
             buttonElement.setAttribute('value', i);
             containerElement.appendChild(buttonElement);
         }
+
+        // Add in-game class to control container
+        controlContainer.classList.add('in-game');
+
+        // Add back button
+        const backButton = document.createElement('button');
+        backButton.addEventListener('click', (event) => {
+            document.querySelector('.container').replaceChildren();
+            document.querySelector('.container').classList.replace('container', 'container-start');
+            document.querySelector('.control-container').replaceChildren();
+            document.querySelector('.control-container').classList.remove('in-game');
+            roundController.resetGame();
+            roundController.resetScoreboard();
+            initGame();
+        })
+        const backSVGDiv = document.createElement('div');
+        backSVGDiv.classList.add('svg', 'back-svg');
+        backButton.appendChild(backSVGDiv);
+        controlContainer.appendChild(backButton);
+
+        // add reset button
+        const resetButton = document.createElement('button');
+        resetButton.addEventListener('click', roundController.resetGame);
+        const resetSVGDiv = document.createElement('div');
+        resetSVGDiv.classList.add('svg', 'reset-svg');
+        resetButton.appendChild(resetSVGDiv);
+        controlContainer.appendChild(resetButton);
+
+        // add scoreboard
+        const scoreboard = document.createElement('div');
+        scoreboard.classList.add('scoreboard');
+        controlContainer.appendChild(scoreboard);
 
         const autoPlay = document.querySelector('.auto-play-button').getAttribute('value') === 'ON';
 
@@ -526,7 +588,10 @@ const UI = (function() {
     }
 
     function addControlButtons() {
-        const controlElement = document.createElement('div');
+
+        let controlElement = document.querySelector('.control-container');
+        if (controlElement === null)
+            controlElement = document.createElement('div');
         controlElement.classList.add('control-container');
 
         controlElement.appendChild(getAutoPlayButton());
@@ -544,6 +609,8 @@ const UI = (function() {
         containerElement.appendChild(vsDiv);
     }
 
+    const resetHeader = () => document.querySelector('.header').textContent = 'Tic-Tac-Toe';
+
     function initGame() {
         const containerElement = document.querySelector('.container-start');
 
@@ -556,6 +623,8 @@ const UI = (function() {
         containerElement.appendChild(playerForm1);
         containerElement.appendChild(playerForm2);
         
+        resetHeader();
+
         // Handle control Elements
         addControlButtons();
 
